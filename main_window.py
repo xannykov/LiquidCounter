@@ -4,7 +4,6 @@ from PySide6.QtCore import (
     QPropertyAnimation,
     QEasingCurve,
     QSize,
-    QPoint,
 )
 
 from PySide6.QtGui import (
@@ -21,7 +20,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QFrame,
-    QToolTip
+    QApplication
 )
 
 from config import (
@@ -420,6 +419,7 @@ class MainWindow(QWidget):
 
     def closeEvent(self, event):
         self.storage.save_window_position(self.x(), self.y())
+        QApplication.quit()
         super().closeEvent(event)
 
     # ========================================================
