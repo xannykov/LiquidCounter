@@ -15,8 +15,8 @@ QPushButton {
     background-color: rgba(255, 255, 255, 25);
     border: 1px solid rgba(255, 255, 255, 45);
     border-radius: 12px;
-    padding: 0px;
-    font-size: 9px;
+    padding: 8px 14px;
+    font-size: 14px;
     font-weight: 600;
 }
 
@@ -73,20 +73,6 @@ QPushButton:pressed {
 }
 """
 
-
-SAVE_BUTTON_SUCCESS_STYLE = """
-QPushButton,
-QPushButton:hover,
-QPushButton:pressed {
-    color: white;
-    background-color: rgba(120, 220, 160, 90);
-    border: 1px solid rgba(120, 255, 180, 160);
-    border-radius: 12px;
-    padding: 0px;
-    font-size: 9px;
-    font-weight: 600;
-}
-"""
 
 
 HISTORY_WIDGET_STYLE = """
@@ -220,5 +206,108 @@ QPushButton {
 QPushButton:hover {
     background-color: rgba(120, 180, 255, 130);
     border: 1px solid rgba(140, 200, 255, 200);
+}
+"""
+
+
+
+SETTINGS_WINDOW_STYLE = """
+QWidget#settingsWindow {
+    color: white;
+    font-family: "Segoe UI";
+    font-size: 12px;
+}
+"""
+
+
+SETTINGS_HEADER_STYLE = """
+QWidget#settingsHeader {
+    background: transparent;
+}
+"""
+
+
+SETTINGS_TITLE_STYLE = """
+QLabel {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+}
+"""
+
+
+SETTINGS_GROUP_STYLE = """
+QGroupBox {
+    border: 1px solid rgba(255,255,255,40);
+    border-radius: 10px;
+    margin-top: 10px;
+    padding: 0px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 5px;
+    color: rgba(255,255,255,200);
+}
+"""
+
+
+SETTINGS_LABEL_STYLE = """
+QLabel {
+    color: rgba(255,255,255,220);
+}
+"""
+
+
+SETTINGS_INPUT_STYLE = """
+QLineEdit, QComboBox {
+    background: rgba(255,255,255,15);
+    border: 1px solid rgba(255,255,255,40);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: white;
+}
+QComboBox::drop-down {
+    border: none;
+}
+QComboBox QAbstractItemView {
+    background: #2a2c33;
+    color: white;
+    selection-background-color: rgba(120,180,255,120);
+}
+"""
+
+
+SETTINGS_CHECKBOX_STYLE = """
+QCheckBox {
+    color: rgba(255,255,255,220);
+    background: transparent;
+}
+"""
+
+
+SETTINGS_SLIDER_STYLE = """
+QSlider::groove:horizontal {
+    height: 4px;
+    background: rgba(255,255,255,40);
+    border-radius: 2px;
+}
+QSlider::handle:horizontal {
+    background: rgba(120,180,255,200);
+    width: 14px;
+    margin: -5px 0;
+    border-radius: 7px;
+}
+QSlider::sub-page:horizontal {
+    background: rgba(120,180,255,120);
+    border-radius: 2px;
+}
+"""
+
+
+SETTINGS_VERSION_STYLE = """
+QLabel {
+    color: rgba(255,255,255,140);
+    background: transparent;
 }
 """

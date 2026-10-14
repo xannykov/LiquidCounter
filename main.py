@@ -10,42 +10,28 @@ from config import (
 from storage import Storage
 from main_window import MainWindow
 
+# Убрать кнопку сохранить и сделать автосохранение, вместо неё кнопку "Настройки"
+# При большом кол-ве записей выводить только первые 20 и т.д.
+# Добавить окно настроек (Бинды клавиш, Автозапуск, Размер интерфейса, Тема (темная, светлая, ржачная), Прозрачность Версия)
+# При зажатом "+/-" прибавлять/убавлять быстро
 
 def main():
 
-    app = QApplication(
-        sys.argv
-    )
+    app = QApplication(sys.argv)
 
-    app.setApplicationName(
-        APP_NAME
-    )
+    app.setApplicationName(APP_NAME)
 
-    app.setQuitOnLastWindowClosed(
-        True
-    )
+    app.setQuitOnLastWindowClosed(False)
 
-    # --------------------------------------------------------
-    # STORAGE
-    # --------------------------------------------------------
 
-    storage = Storage(
-        DATA_FILE
-    )
+    storage = Storage(DATA_FILE)
 
-    # --------------------------------------------------------
-    # MAIN WINDOW
-    # --------------------------------------------------------
 
-    window = MainWindow(
-        storage
-    )
+    window = MainWindow(storage)
 
     window.show()
 
-    sys.exit(
-        app.exec()
-    )
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

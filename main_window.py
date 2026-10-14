@@ -6,20 +6,12 @@ from PySide6.QtCore import (
     QSize,
 )
 
-from PySide6.QtGui import (
-    QPainter,
-    QPainterPath,
-    QColor,
-    QLinearGradient,
-)
-
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QFrame,
     QApplication
 )
 
@@ -31,19 +23,21 @@ from config import (
     IDLE_OPACITY,
     HOVER_OPACITY,
     HISTORY_ICON,
-    SAVE_ICON,
+    SETTINGS_ICON,
     CLOSE_ICON,
     MINUS_ICON,
     PLUS_ICON,
-    PIN_ICON
+    PIN_ICON, AUTOSAVE_DELAY_MS
 )
 
-from glass_button import GlassButton
+from glass_button import GlassButton, RepeatButton
 from history_widget import HistoryWidget
+from settings_window import SettingsWindow
+from glass_background import GlassBackground
+
 from styles import (
     MAIN_STYLE,
     GLASS_BUTTON_STYLE,
-    SAVE_BUTTON_SUCCESS_STYLE,
     HISTORY_BUTTON_ACTIVE_STYLE,
     PIN_BUTTON_ACTIVE_STYLE,
     CLOSE_BUTTON_STYLE,
@@ -54,54 +48,6 @@ from windows_effects import (
     configure_window,
     enable_blur,
 )
-
-
-class GlassBackground(QFrame):
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_TranslucentBackground
-        )
-
-        self.setStyleSheet(
-            "background: transparent;"
-            "border: none;"
-        )
-
-    def paintEvent(self, event):
-
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-        rect = self.rect().adjusted(1, 1, -1, -1)
-
-        path = QPainterPath()
-        path.addRoundedRect(rect, 23, 23)
-
-        gradient = QLinearGradient(
-            0, 0,
-            self.width(), self.height()
-        )
-        gradient.setColorAt(0.0, QColor(255, 255, 255, 20))
-        gradient.setColorAt(0.5, QColor(255, 255, 255, 5))
-        gradient.setColorAt(1.0, QColor(255, 255, 255, 20))
-        painter.fillPath(path, gradient)
-
-        glow = QLinearGradient(
-            0, 0,
-            self.width(), self.height()
-        )
-        glow.setColorAt(0.0, QColor(130, 160, 255, 70))
-        glow.setColorAt(0.5, QColor(130, 160, 255, 45))
-        glow.setColorAt(0.1, QColor(130, 160, 255, 70))
-        painter.fillPath(path, glow)
-
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.setPen(QColor(255, 255, 255, 75))
-        painter.drawPath(path)
-
 
 class MainWindow(QWidget):
 
@@ -118,18 +64,17 @@ class MainWindow(QWidget):
         self.is_pinned = self.storage.get_pinned()
         self.drag_position = None
 
+        self._autosave_timer = QTimer(self)
+        self._autosave_timer.setSingleShot(True)
+        self._autosave_timer.timeout.connect(self._do_autosave)
+
         # ----------------------------------------------------
         # OPACITY ANIMATION
         # ----------------------------------------------------
 
-        self.opacity_animation = QPropertyAnimation(
-            self,
-            b"windowOpacity"
-        )
+        self.opacity_animation = QPropertyAnimation(self,b"windowOpacity")
         self.opacity_animation.setDuration(180)
-        self.opacity_animation.setEasingCurve(
-            QEasingCurve.Type.OutCubic
-        )
+        self.opacity_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         # ----------------------------------------------------
         # WINDOW
@@ -259,10 +204,10 @@ class MainWindow(QWidget):
         row = QHBoxLayout()
         row.setSpacing(6)
 
-        self.minus_button = GlassButton("", MINUS_ICON)
+        self.minus_button = RepeatButton("", MINUS_ICON)
         self.minus_button.setFixedSize(36, 36)
 
-        self.plus_button = GlassButton("", PLUS_ICON)
+        self.plus_button = RepeatButton("", PLUS_ICON)
         self.plus_button.setFixedSize(36, 36)
 
         for button in (self.minus_button, self.plus_button):
@@ -287,20 +232,20 @@ class MainWindow(QWidget):
             }
         """)
 
-        self.save_button = GlassButton("", SAVE_ICON)
-        self.save_button.setFixedSize(36, 36)
-        self.save_button.clicked.connect(self.save_counter)
-
         self.history_button = GlassButton("", HISTORY_ICON)
         self.history_button.setFixedSize(36, 36)
         self.history_button.clicked.connect(self.toggle_history)
+
+        self.settings_button = GlassButton("", SETTINGS_ICON)
+        self.settings_button.setFixedSize(36, 36)
+        self.settings_button.clicked.connect(self.open_settings)
 
         row.addWidget(self.minus_button)
         row.addWidget(self.counter_label, 1)
         row.addWidget(self.plus_button)
         row.addSpacing(2)
-        row.addWidget(self.save_button)
         row.addWidget(self.history_button)
+        row.addWidget(self.settings_button)
 
         self.main_layout.addSpacing(0)
         self.main_layout.addLayout(row)
@@ -320,34 +265,39 @@ class MainWindow(QWidget):
     def increase(self):
         self.counter += 1
         self.update_counter()
+        self._schedule_autosave()
 
     def decrease(self):
+        if self.counter <= 0:
+            return
         self.counter -= 1
         self.update_counter()
+        self._schedule_autosave()
 
     def update_counter(self):
         self.counter_label.setText(str(self.counter))
 
-    # ========================================================
-    # SAVE
-    # ========================================================
+    def _schedule_autosave(self):
+        self._autosave_timer.start(AUTOSAVE_DELAY_MS)
 
-    def save_counter(self):
+    def _do_autosave(self):
         try:
             self.storage.save_today(self.counter)
-
-            self.save_button.setStyleSheet(SAVE_BUTTON_SUCCESS_STYLE)
-
             if self.history_open:
                 self.history_widget.reload()
-
-            QTimer.singleShot(1000, self.restore_save_button)
-
         except Exception as error:
-            print("Ошибка сохранения:", error)
+            print("Autosave error:", error)
 
-    def restore_save_button(self):
-        self.save_button.setStyleSheet(GLASS_BUTTON_STYLE)
+
+    # ========================================================
+    # SETTINGS
+    # ========================================================
+
+    def open_settings(self):
+        self.settings_window = SettingsWindow(self.storage)
+        self.settings_window.show()
+        self.settings_window.raise_()
+        self.settings_window.activateWindow()
 
     # ========================================================
     # HISTORY
@@ -418,6 +368,12 @@ class MainWindow(QWidget):
         self.opacity_animation.start()
 
     def closeEvent(self, event):
+        self._autosave_timer.stop()
+        try:
+            self.storage.save_today(self.counter)
+        except Exception as error:
+            print("Save on close error:", error)
+
         self.storage.save_window_position(self.x(), self.y())
         QApplication.quit()
         super().closeEvent(event)

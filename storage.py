@@ -116,29 +116,36 @@ class Storage:
         if isinstance(entry, dict):
 
             try:
-                return int(entry.get("value",0))
-
+                value = int(entry.get("value",0))
             except (TypeError,ValueError):
                 return 0
 
-        try:
-            return int(entry)
+            if value < 0:
+                return 0
+            return value
 
+        try:
+            value = int(entry)
         except (TypeError,ValueError):
             return 0
+
+        if value < 0:
+            return 0
+        return value
 
 
     def save_today(self, value):
 
-        key = date.today().isoformat()
+        value = int(value)
+        if value < 0:
+            value = 0
 
+        key = date.today().isoformat()
         now = datetime.now()
 
         self.data[key] = {
             "value": int(value),
-            "saved_at": now.isoformat(
-                timespec="minutes"
-            )
+            "saved_at": now.isoformat(timespec="minutes")
         }
         self._write_file()
 
@@ -155,47 +162,42 @@ class Storage:
                 ).date()
 
             except ValueError:
-
                 continue
 
             if isinstance(entry, dict):
                 try:
-                    value = int( entry.get("value",0))
-
-                except (TypeError,ValueError
-                ):
+                    value = int(entry.get("value",0))
+                except (TypeError,ValueError):
                     value = 0
-                saved_at_string = entry.get(
-                    "saved_at"
-                )
+
+                saved_at_string = entry.get("saved_at")
 
                 if saved_at_string:
-
                     try:
                         saved_at = datetime.fromisoformat(saved_at_string)
-
                     except ValueError:
                         saved_at = datetime.combine(
                             parsed_date,
                             datetime.min.time()
                         )
-
                 else:
-
                     saved_at = datetime.combine(
                         parsed_date,
                         datetime.min.time()
                     )
-
             else:
                 try:
                     value = int(entry)
                 except (TypeError,ValueError):
                     value = 0
+
                 saved_at = datetime.combine(
                     parsed_date,
                     datetime.min.time()
                 )
+
+            if value < 0:
+                value = 0
 
             result.append(
                 {
@@ -253,4 +255,15 @@ class Storage:
             entry = {}
         entry["pinned"] = bool(pinned)
         self.data["__window__"] = entry
+        self._write_file()
+
+
+    def get_settings(self):
+        entry = self.data.get("__settings__")
+        if isinstance(entry, dict):
+            return entry
+        return {}
+
+    def save_settings(self, settings: dict):
+        self.data["__settings__"] = settings
         self._write_file()
