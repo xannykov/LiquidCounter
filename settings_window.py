@@ -1,83 +1,115 @@
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, QTimer
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QComboBox,
-    QSlider,
-    QCheckBox,
-    QLineEdit,
-    QPushButton,
-    QGroupBox,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QComboBox, QSlider, QCheckBox, QLineEdit,
+    QPushButton, QGroupBox
 )
 
-from config import (
-    APP_VERSION,
-    DEFAULT_SETTINGS,
-    CLOSE_ICON
-)
-
+from config import APP_VERSION, DEFAULT_SETTINGS, CLOSE_ICON
 from glass_background import GlassBackground
 from glass_button import GlassButton
-
 from styles import (
-    SETTINGS_WINDOW_STYLE,
-    SETTINGS_HEADER_STYLE,
-    SETTINGS_TITLE_STYLE,
-    CLOSE_BUTTON_STYLE,
-    SETTINGS_GROUP_STYLE,
-    SETTINGS_LABEL_STYLE,
-    SETTINGS_INPUT_STYLE,
-    SETTINGS_CHECKBOX_STYLE,
-    SETTINGS_SLIDER_STYLE,
-    GLASS_BUTTON_STYLE,
-    SETTINGS_VERSION_STYLE,
+    SETTINGS_WINDOW_STYLE, SETTINGS_HEADER_STYLE, SETTINGS_TITLE_STYLE,
+    CLOSE_BUTTON_STYLE, SETTINGS_GROUP_STYLE, SETTINGS_LABEL_STYLE,
+    SETTINGS_INPUT_STYLE, SETTINGS_CHECKBOX_STYLE, SETTINGS_SLIDER_STYLE,
+    GLASS_BUTTON_STYLE, SETTINGS_VERSION_STYLE
 )
+
+
+class HotkeyEdit(QLineEdit):
+    def __init__(self, text=""):
+        super().__init__(text)
+        self.setReadOnly(True)
+        self.setPlaceholderText("Нажмите клавиши...")
+
+        # Настройки для мигания
+        self._blink_state = False
+        self._blink_timer = QTimer(self)
+        self._blink_timer.setInterval(400)
+        self._blink_timer.timeout.connect(self._toggle_blink)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.setPlaceholderText("Нажмите клавиши...")
+
+        self.setProperty("active", True)
+        self._blink_timer.start()
+
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self._blink_timer.stop()
+
+        self.setProperty("active", False)
+        self.setProperty("blink", False)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def _toggle_blink(self):
+        self._blink_state = not self._blink_state
+        self.setProperty("blink", self._blink_state)
+        self.style().unpolish(self)
+        self.style().polish(self)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete):
+            self.clear()
+            return
+        if event.key() in (Qt.Key.Key_Control, Qt.Key.Key_Shift, Qt.Key.Key_Alt, Qt.Key.Key_Meta):
+            return
+
+        sequence = QKeySequence(event.keyCombination()).toString()
+        self.setText(sequence)
+
+        self._blink_timer.stop()
+        self.setProperty("active", False)
+        self.setProperty("blink", False)
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.clearFocus()
 
 
 class SettingsWindow(QWidget):
-
-    def __init__(self, storage, parent=None):
+    def __init__(self, storage, main_window, parent=None):
         super().__init__(parent)
-
         self.storage = storage
+        self.main_window = main_window
         self.drag_position = None
 
-        self.setWindowFlags(
-            Qt.WindowType.Window
-            | Qt.WindowType.FramelessWindowHint
-        )
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_TranslucentBackground
-        )
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_NoSystemBackground
-        )
-        self.setFixedSize(285, 500)
+        self.setWindowOpacity(1)
+
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
+        self.setFixedSize(300, 520)
 
         self.settings = {**DEFAULT_SETTINGS, **self.storage.get_settings()}
 
         # ----------------------------------------------------
         # GLASS BACKGROUND
         # ----------------------------------------------------
-
         self.background = GlassBackground(self, radius=23)
         self.background.setGeometry(self.rect())
+        current_theme = self.settings.get("theme", "Темная")
+        self.background.set_theme(
+            "rusty" if current_theme == "Ржачная" else "dark")
+            # "rusty" if current_theme == "Ржачная" else ("light" if current_theme == "Светлая" else "dark"))
 
         self.content = QWidget(self.background)
         self.content.setGeometry(self.background.rect())
         self.content.setObjectName("settingsWindow")
-        self.content.setStyleSheet(SETTINGS_WINDOW_STYLE)
+        self.apply_theme_styles(current_theme)
 
         layout = QVBoxLayout(self.content)
-        layout.setContentsMargins(14, 10, 14, 14)
+        layout.setContentsMargins(14, 1, 14, 14)
         layout.setSpacing(10)
 
         # ----------------------------------------------------
         # HEADER
         # ----------------------------------------------------
-
         header = QWidget()
         header.setObjectName("settingsHeader")
         header.setStyleSheet(SETTINGS_HEADER_STYLE)
@@ -104,19 +136,14 @@ class SettingsWindow(QWidget):
         # ----------------------------------------------------
         # HOTKEYS
         # ----------------------------------------------------
-
         hotkeys_group = QGroupBox("Бинды клавиш")
         hotkeys_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         hotkeys_layout = QVBoxLayout(hotkeys_group)
 
-        self.hotkey_increment = QLineEdit(
-            self.settings["hotkeys"].get("increment", "")
-        )
+        self.hotkey_increment = HotkeyEdit(self.settings["hotkeys"].get("increment", ""))
         self.hotkey_increment.setStyleSheet(SETTINGS_INPUT_STYLE)
 
-        self.hotkey_decrement = QLineEdit(
-            self.settings["hotkeys"].get("decrement", "")
-        )
+        self.hotkey_decrement = HotkeyEdit(self.settings["hotkeys"].get("decrement", ""))
         self.hotkey_decrement.setStyleSheet(SETTINGS_INPUT_STYLE)
 
         label_inc = QLabel("Увеличить:")
@@ -135,7 +162,6 @@ class SettingsWindow(QWidget):
         # ----------------------------------------------------
         # BEHAVIOR
         # ----------------------------------------------------
-
         behavior_group = QGroupBox("Поведение")
         behavior_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         behavior_layout = QVBoxLayout(behavior_group)
@@ -150,7 +176,6 @@ class SettingsWindow(QWidget):
         # ----------------------------------------------------
         # APPEARANCE
         # ----------------------------------------------------
-
         appearance_group = QGroupBox("Внешний вид")
         appearance_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         appearance_layout = QVBoxLayout(appearance_group)
@@ -161,36 +186,32 @@ class SettingsWindow(QWidget):
 
         self.theme_combo = QComboBox()
         self.theme_combo.setStyleSheet(SETTINGS_INPUT_STYLE)
-        self.theme_combo.addItems(["Темная", "Светлая", "Ржачная"])
+        self.theme_combo.addItems(["Темная", "Ржачная"])
+        # self.theme_combo.addItems(["Темная", "Светлая", "Ржачная"])
         self.theme_combo.setCurrentText(self.settings.get("theme", "Темная"))
+        self.theme_combo.currentTextChanged.connect(self._on_theme_preview)
+        self.theme_combo.view().window().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         appearance_layout.addWidget(self.theme_combo)
 
-        label_opacity = QLabel("Прозрачность:")
+        label_opacity = QLabel("Прозрачность в покое:")
         label_opacity.setStyleSheet(SETTINGS_LABEL_STYLE)
         appearance_layout.addWidget(label_opacity)
 
         self.opacity_slider = QSlider(Qt.Orientation.Horizontal)
         self.opacity_slider.setStyleSheet(SETTINGS_SLIDER_STYLE)
         self.opacity_slider.setRange(10, 100)
-        self.opacity_slider.setValue(
-            int(self.settings.get("idle_opacity", 0.3) * 100)
-        )
+        self.opacity_slider.setValue(int(self.settings.get("idle_opacity", 0.3) * 100))
         appearance_layout.addWidget(self.opacity_slider)
 
         layout.addWidget(appearance_group)
 
         # ----------------------------------------------------
-        # VERSION
+        # VERSION & BUTTONS
         # ----------------------------------------------------
-
         version_label = QLabel(f"Версия: {APP_VERSION}")
         version_label.setStyleSheet(SETTINGS_VERSION_STYLE)
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version_label)
-
-        # ----------------------------------------------------
-        # BUTTONS
-        # ----------------------------------------------------
 
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -207,12 +228,24 @@ class SettingsWindow(QWidget):
 
         buttons.addWidget(cancel_btn)
         buttons.addWidget(save_btn)
-
         layout.addLayout(buttons)
 
-    # ========================================================
-    # SAVE
-    # ========================================================
+    def _on_theme_preview(self, theme_name):
+        self.apply_theme_styles(theme_name)
+        if theme_name == "Ржачная":
+            self.background.set_theme("rusty")
+        # elif theme_name == "Светлая":
+        #     self.background.set_theme("light")
+        else:
+            self.background.set_theme("dark")
+
+    def apply_theme_styles(self, theme_name):
+        # if theme_name == "Светлая":
+        #     from styles import LIGHT_SETTINGS_WINDOW_STYLE, LIGHT_SETTINGS_GROUP_STYLE, LIGHT_SETTINGS_LABEL_STYLE, \
+        #         LIGHT_SETTINGS_INPUT_STYLE
+        #     self.content.setStyleSheet(LIGHT_SETTINGS_WINDOW_STYLE)
+        # else:
+        self.content.setStyleSheet(SETTINGS_WINDOW_STYLE)
 
     def save_and_close(self):
         self.settings["hotkeys"] = {
@@ -224,28 +257,20 @@ class SettingsWindow(QWidget):
         self.settings["idle_opacity"] = self.opacity_slider.value() / 100.0
 
         self.storage.save_settings(self.settings)
-        self.close()
 
-    # ========================================================
-    # DRAG
-    # ========================================================
+        if self.main_window:
+            self.main_window.load_settings()
+
+        self.close()
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.drag_position = (
-                event.globalPosition().toPoint()
-                - self.frameGeometry().topLeft()
-            )
+            self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             event.accept()
 
     def mouseMoveEvent(self, event):
-        if (
-            self.drag_position is not None
-            and event.buttons() & Qt.MouseButton.LeftButton
-        ):
-            self.move(
-                event.globalPosition().toPoint() - self.drag_position
-            )
+        if self.drag_position is not None and event.buttons() & Qt.MouseButton.LeftButton:
+            self.move(event.globalPosition().toPoint() - self.drag_position)
             event.accept()
 
     def mouseReleaseEvent(self, event):

@@ -6,6 +6,8 @@ from PySide6.QtCore import (
     QSize,
 )
 
+from PySide6.QtGui import QShortcut, QKeySequence
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -27,7 +29,9 @@ from config import (
     CLOSE_ICON,
     MINUS_ICON,
     PLUS_ICON,
-    PIN_ICON, AUTOSAVE_DELAY_MS
+    PIN_ICON,
+    AUTOSAVE_DELAY_MS,
+    DEFAULT_SETTINGS
 )
 
 from glass_button import GlassButton, RepeatButton
@@ -36,12 +40,11 @@ from settings_window import SettingsWindow
 from glass_background import GlassBackground
 
 from styles import (
-    MAIN_STYLE,
-    GLASS_BUTTON_STYLE,
-    HISTORY_BUTTON_ACTIVE_STYLE,
-    PIN_BUTTON_ACTIVE_STYLE,
-    CLOSE_BUTTON_STYLE,
-    ICON_BUTTON_STYLE,
+    MAIN_STYLE, GLASS_BUTTON_STYLE, HISTORY_BUTTON_ACTIVE_STYLE,
+    PIN_BUTTON_ACTIVE_STYLE, CLOSE_BUTTON_STYLE, ICON_BUTTON_STYLE,
+    PIN_BUTTON_ACTIVE_STYLE_RUSTY
+    # LIGHT_MAIN_STYLE,
+    # LIGHT_GLASS_BUTTON_STYLE
 )
 
 from windows_effects import (
@@ -67,6 +70,10 @@ class MainWindow(QWidget):
         self._autosave_timer = QTimer(self)
         self._autosave_timer.setSingleShot(True)
         self._autosave_timer.timeout.connect(self._do_autosave)
+
+        self.shortcut_inc = None
+        self.shortcut_dec = None
+        self.shortcut_hist = None
 
         # ----------------------------------------------------
         # OPACITY ANIMATION
@@ -125,6 +132,11 @@ class MainWindow(QWidget):
         # ----------------------------------------------------
 
         self.setWindowOpacity(IDLE_OPACITY)
+
+        self.settings = {}
+        self.load_settings()
+
+        self.setWindowOpacity(self.settings.get("idle_opacity", IDLE_OPACITY))
 
     # ========================================================
     # POSITION
@@ -293,8 +305,47 @@ class MainWindow(QWidget):
     # SETTINGS
     # ========================================================
 
+    def load_settings(self):
+        self.settings = {**DEFAULT_SETTINGS, **self.storage.get_settings()}
+
+        self.idle_opacity = self.settings.get("idle_opacity", IDLE_OPACITY)
+        if not self.underMouse():
+            self.setWindowOpacity(self.idle_opacity)
+
+        theme = self.settings.get("theme", "Темная")
+        self.background.set_theme("rusty" if theme == "Ржачная" else "dark")
+        # self.background.set_theme("rusty" if theme == "Ржачная" else ("light" if theme == "Светлая" else "dark"))
+
+        # if theme == "Светлая":
+        #     self.setStyleSheet(LIGHT_MAIN_STYLE)
+        #     # (В идеале нужно также перекрашивать кнопки и лейблы,
+        #     # но для простоты меняем только фон)
+        # else:
+        #     self.setStyleSheet(MAIN_STYLE)
+
+        self.setup_hotkeys()
+
+    def setup_hotkeys(self):
+        if self.shortcut_inc: self.shortcut_inc.deleteLater()
+        if self.shortcut_dec: self.shortcut_dec.deleteLater()
+        if self.shortcut_hist: self.shortcut_hist.deleteLater()
+
+        hotkeys = self.settings.get("hotkeys", {})
+
+        if hotkeys.get("increment"):
+            self.shortcut_inc = QShortcut(QKeySequence(hotkeys["increment"]), self)
+            self.shortcut_inc.activated.connect(self.increase)
+
+        if hotkeys.get("decrement"):
+            self.shortcut_dec = QShortcut(QKeySequence(hotkeys["decrement"]), self)
+            self.shortcut_dec.activated.connect(self.decrease)
+
+        if hotkeys.get("history"):
+            self.shortcut_hist = QShortcut(QKeySequence(hotkeys["history"]), self)
+            self.shortcut_hist.activated.connect(self.toggle_history)
+
     def open_settings(self):
-        self.settings_window = SettingsWindow(self.storage)
+        self.settings_window = SettingsWindow(self.storage, self)
         self.settings_window.show()
         self.settings_window.raise_()
         self.settings_window.activateWindow()
@@ -304,14 +355,12 @@ class MainWindow(QWidget):
     # ========================================================
 
     def toggle_history(self):
-
         if self.history_open:
             self.close_history()
         else:
             self.open_history()
 
     def open_history(self):
-
         self.history_open = True
 
         self.history_widget.reload()
@@ -334,7 +383,6 @@ class MainWindow(QWidget):
         )
 
     def close_history(self):
-
         self.history_open = False
 
         self.history_button.setStyleSheet(
@@ -355,7 +403,7 @@ class MainWindow(QWidget):
         super().enterEvent(event)
 
     def leaveEvent(self, event):
-        self.animate_opacity(IDLE_OPACITY)
+        self.animate_opacity(self.settings.get("idle_opacity", IDLE_OPACITY))
         super().leaveEvent(event)
 
     def animate_opacity(self, target):
@@ -414,8 +462,13 @@ class MainWindow(QWidget):
         self.update_pin_style()
 
     def update_pin_style(self):
+        self.settings = {**DEFAULT_SETTINGS, **self.storage.get_settings()}
+        theme = self.settings.get("theme", "Ржачная")
         if self.is_pinned:
-            self.pin_button.setStyleSheet(PIN_BUTTON_ACTIVE_STYLE)
+            if theme == "Ржачная":
+                self.pin_button.setStyleSheet(PIN_BUTTON_ACTIVE_STYLE_RUSTY)
+            else:
+                self.pin_button.setStyleSheet(PIN_BUTTON_ACTIVE_STYLE)
         else:
             self.pin_button.setStyleSheet(ICON_BUTTON_STYLE)
 

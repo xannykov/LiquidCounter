@@ -20,7 +20,6 @@ REPEAT_INITIAL_DELAY_MS = 400
 REPEAT_INTERVAL_MS = 80
 
 
-# Настройки по умолчанию
 DEFAULT_SETTINGS = {
     "theme": "dark",
     "idle_opacity": IDLE_OPACITY,
@@ -28,7 +27,6 @@ DEFAULT_SETTINGS = {
     "hotkeys": {
         "increment": "Ctrl+Up",
         "decrement": "Ctrl+Down",
-        "history": "Ctrl+H",
     },
 }
 

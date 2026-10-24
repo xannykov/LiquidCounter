@@ -196,6 +196,17 @@ QPushButton:hover {
 }
 """
 
+PIN_BUTTON_ACTIVE_STYLE_RUSTY = """
+QPushButton {
+    background-color: rgba(255, 255, 255, 48);
+    border: 1px solid rgba(255, 255, 255, 80);
+    border-radius: 11px;
+}
+QPushButton:hover {
+    background-color: rgba(255, 255, 255, 100);
+    border: 1px solid rgba(255, 255, 255, 150);
+}
+"""
 
 PIN_BUTTON_ACTIVE_STYLE = """
 QPushButton {
@@ -271,9 +282,33 @@ QComboBox::drop-down {
     border: none;
 }
 QComboBox QAbstractItemView {
-    background: #2a2c33;
+    background-color: rgba(30, 31, 36, 240);
+    border: 1px solid rgba(255, 255, 255, 40);
+    padding: 4px;
+    outline: none;
+    selection-background-color: transparent;
+}
+QComboBox QAbstractItemView::item {
     color: white;
-    selection-background-color: rgba(120,180,255,120);
+    padding: 6px 10px;
+    border-radius: 4px;
+    min-height: 20px;
+}
+QComboBox QAbstractItemView::item:hover {
+    background-color: rgba(255, 255, 255, 30);
+}
+QComboBox QAbstractItemView::item:selected {
+    background-color: rgba(255, 255, 255, 80);
+    color: white;
+}
+
+QLineEdit[active="true"] {
+    border: 1px solid rgba(255, 255, 255, 100);
+    background: rgba(255, 255, 255, 20);
+}
+QLineEdit[active="true"][blink="true"] {
+    border: 1px solid rgba(255, 255, 255, 255);
+    background: rgba(255, 255, 255, 60);
 }
 """
 
@@ -282,6 +317,20 @@ SETTINGS_CHECKBOX_STYLE = """
 QCheckBox {
     color: rgba(255,255,255,220);
     background: transparent;
+}
+QCheckBox::indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 60);
+    background-color: rgba(255, 255, 255, 15);
+}
+QCheckBox::indicator:hover {
+    background-color: rgba(255, 255, 255, 30);
+}
+QCheckBox::indicator:checked {
+    background-color: rgba(255, 255, 255, 200);
+    border: 1px solid rgba(255, 255, 255, 255);
 }
 """
 
@@ -293,13 +342,13 @@ QSlider::groove:horizontal {
     border-radius: 2px;
 }
 QSlider::handle:horizontal {
-    background: rgba(120,180,255,200);
+    background: rgba(255,255,255,200);
     width: 14px;
     margin: -5px 0;
     border-radius: 7px;
 }
 QSlider::sub-page:horizontal {
-    background: rgba(120,180,255,120);
+    background: rgba(255,255,255,200);
     border-radius: 2px;
 }
 """
@@ -311,3 +360,117 @@ QLabel {
     background: transparent;
 }
 """
+
+
+# ============================================================
+# СВЕТЛАЯ ТЕМА
+# ============================================================
+
+# LIGHT_MAIN_STYLE = """
+# QWidget {
+#     font-family: "Segoe UI";
+# }
+# QPushButton {
+#     border: none;
+#     outline: none;
+# }
+# """
+
+# LIGHT_GLASS_BUTTON_STYLE = """
+# QPushButton {
+#     color: rgba(0, 0, 0, 200);
+#     background-color: rgba(192, 240, 228, 1);
+#     border: 1px solid rgba(0, 0, 0, 30);
+#     border-radius: 12px;
+#     padding: 8px 14px;
+#     font-size: 14px;
+#     font-weight: 600;
+# }
+# QPushButton:hover {
+#     background-color: rgba(0, 0, 0, 20);
+#     border: 1px solid rgba(0, 0, 0, 50);
+# }
+# QPushButton:pressed {
+#     background-color: rgba(0, 0, 0, 40);
+# }
+# """
+#
+# LIGHT_HISTORY_ITEM_STYLE = """
+# QFrame#historyItem {
+#     background-color: rgba(0, 0, 0, 10);
+#     border: 1px solid rgba(0, 0, 0, 20);
+#     border-radius: 12px;
+# }
+# """
+#
+# LIGHT_HISTORY_ITEM_DATE_STYLE = """
+# QLabel {
+#     color: rgba(0, 0, 0, 180);
+#     background: transparent;
+#     font-size: 14px;
+# }
+# """
+#
+# LIGHT_HISTORY_ITEM_VALUE_STYLE = """
+# QLabel {
+#     color: rgba(0, 0, 0, 220);
+#     background: transparent;
+#     font-size: 16px;
+#     font-weight: 600;
+#     padding-right: 5px;
+# }
+# """
+#
+# LIGHT_HISTORY_SCROLL_STYLE = """
+# QScrollArea { background: transparent; border: none; }
+# QScrollBar:vertical { background: rgba(0, 0, 0, 10); width: 6px; border-radius: 3px; margin: 0; }
+# QScrollBar::handle:vertical { background: rgba(0, 0, 0, 40); border-radius: 3px; min-height: 20px; }
+# QScrollBar::handle:vertical:hover { background: rgba(0, 0, 0, 80); }
+# QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+# QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: transparent; }
+# """
+#
+# LIGHT_SETTINGS_WINDOW_STYLE = """
+# QWidget#settingsWindow {
+#     color: rgba(0, 0, 0, 220);
+#     font-family: "Segoe UI";
+#     font-size: 12px;
+# }
+# """
+#
+# LIGHT_SETTINGS_GROUP_STYLE = """
+# QGroupBox {
+#     border: 1px solid rgba(0, 0, 0, 30);
+#     border-radius: 10px;
+#     margin-top: 10px;
+#     padding: 0px;
+# }
+# QGroupBox::title {
+#     subcontrol-origin: margin;
+#     left: 10px;
+#     padding: 0 5px;
+#     color: rgba(0, 0, 0, 200);
+# }
+# """
+#
+# LIGHT_SETTINGS_LABEL_STYLE = """
+# QLabel {
+#     color: rgba(0, 0, 0, 200);
+# }
+# """
+#
+# LIGHT_SETTINGS_INPUT_STYLE = """
+# QLineEdit, QComboBox {
+#     background: rgba(0, 0, 0, 10);
+#     border: 1px solid rgba(0, 0, 0, 30);
+#     border-radius: 6px;
+#     padding: 4px 8px;
+#     color: rgba(0, 0, 0, 220);
+# }
+# QComboBox::drop-down { border: none; }
+# QComboBox QAbstractItemView {
+#     background: #f0f0f0;
+#     color: black;
+#     selection-background-color: rgba(120,180,255,120);
+# }
+# """
